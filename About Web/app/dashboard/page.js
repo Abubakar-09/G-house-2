@@ -2,10 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { useSession } from "next-auth/react";
+import { useSession } from 'next-auth/react';
 
 const Page = () => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   const [form, setForm] = useState({
@@ -13,12 +13,48 @@ const Page = () => {
     linkdin: '',
   });
 
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    if (session) {
+      const fetchUserData = async () => {
+        try {
+          const response = await fetch('/show', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email: session.user.email }),
+          });
+
+          if (response.ok) {
+            const userData = await response.json();
+            setForm({
+              about: userData.about || '',
+              linkdin: userData.linkdin || '',
+            });
+          } else {
+            console.error('Failed to fetch user data:', await response.text());
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+      };
+
+      fetchUserData();
+    }
+  }, [session]);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleForm = async (e) => {
-    e.preventDefault(); // Prevent default form submission behavior
+    e.preventDefault();
 
     const data = {
       name: session.user.name,
@@ -29,62 +65,29 @@ const Page = () => {
     };
 
     try {
-      const response = await fetch("/manage", {
-        method: "PUT",
+      const response = await fetch('/manage', {
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
       });
 
       if (response.ok) {
-        const updatedUser = await response.json();
-        //console.log("Updated User:", updatedUser);
-        // Reset form after successful submission
-        router.push('/dashboard')
+        router.push('/dashboard');
       } else {
-        console.error("Failed to update:", await response.text());
+        console.error('Failed to update:', await response.text());
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error('Error:', error);
     }
   };
 
-  useEffect(() => {
-    if (session) {
-      const fetchUserData = async () => {
-        try {
-          const response = await fetch("/show", {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ email: session.user.email }),
-          });
-
-          if (response.ok) {
-            const userData = await response.json();
-            //console.log("Fetched User Data:", userData);
-
-            // Populate the form with the fetched data
-            setForm({
-              about: userData.about || '',
-              linkdin: userData.linkdin || '',
-            });
-          } else {
-            console.error("Failed to fetch user data:", await response.text());
-          }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-        }
-      };
-
-      fetchUserData();
-    }
-  }, [session]);
+  if (status === 'loading') {
+    return <div>Loading...</div>;
+  }
 
   if (!session) {
-    router.push('/login');
     return null;
   }
 
