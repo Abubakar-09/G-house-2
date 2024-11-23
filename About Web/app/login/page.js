@@ -1,28 +1,36 @@
-'use client'
-import { useSession, signIn, signOut } from "next-auth/react"
-import { useRouter } from "next/navigation"
+'use client';
+import { useSession, signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
+const Page = () => {
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
-const page = () => {
-  const { data: session } = useSession();
-  const Router  = useRouter();
-
-  const HandleLogin = ()=>{
-    signIn('github');
-  }
-  
-    if(session){
-      Router.push('/')
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.push('/'); // Navigate only after the component has rendered
     }
-    return (
-      <>
-        <div className='h-screen flex flex-col items-center py-32 gap-5'>
-          <button onClick={() => HandleLogin()} className='bg-white text-black py-3 w-[30vw] max-md:w-[60vw] rounded-lg'>
-            Github Sign In
-          </button>
-        </div>
-      </>
-    )
-}
+  }, [status, router]);
 
-export default page
+  const handleLogin = () => {
+    signIn('github');
+  };
+
+  if (status === "authenticated") {
+    return null; // Avoid rendering the page content if already authenticated
+  }
+
+  return (
+    <div className="h-screen flex flex-col items-center py-32 gap-5">
+      <button 
+        onClick={handleLogin} 
+        className="bg-white text-black py-3 w-[30vw] max-md:w-[60vw] rounded-lg"
+      >
+        GitHub Sign In
+      </button>
+    </div>
+  );
+};
+
+export default Page;
