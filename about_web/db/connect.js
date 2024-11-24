@@ -10,7 +10,7 @@ export async function connectToDatabase() {
 
   try {
     const db = await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
+      // useNewUrlParser: true,
     });
 
     isConnected = true;
